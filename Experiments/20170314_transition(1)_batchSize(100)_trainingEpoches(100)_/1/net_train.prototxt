@@ -1,0 +1,127 @@
+layer {
+  name: "sample"
+  type: "Python"
+  top: "sample"
+  top: "label"
+  top: "clip_marker"
+  include {
+    phase: TRAIN
+  }
+  python_param {
+    module: "MyDataLayer"
+    layer: "MyLayer"
+    param_str: "{\'data_path\': \'Data/train.pkl\', \'batch_size\': 100}"
+  }
+}
+layer {
+  name: "sample_1"
+  type: "Reshape"
+  bottom: "sample"
+  top: "sample_1"
+  reshape_param {
+    shape {
+      dim: 100
+      dim: 1
+      dim: 12500
+    }
+  }
+}
+layer {
+  name: "label_1"
+  type: "Reshape"
+  bottom: "label"
+  top: "label_1"
+  reshape_param {
+    shape {
+      dim: 100
+      dim: 1
+    }
+  }
+}
+layer {
+  name: "clip_marker_1"
+  type: "Reshape"
+  bottom: "clip_marker"
+  top: "clip_marker_1"
+  reshape_param {
+    shape {
+      dim: 100
+      dim: 1
+    }
+  }
+}
+layer {
+  name: "lstm"
+  type: "LSTM"
+  bottom: "sample_1"
+  bottom: "clip_marker_1"
+  top: "lstm"
+  recurrent_param {
+    num_output: 17
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.0
+    }
+  }
+}
+layer {
+  name: "relu"
+  type: "ReLU"
+  bottom: "lstm"
+  top: "relu"
+}
+layer {
+  name: "ip"
+  type: "InnerProduct"
+  bottom: "relu"
+  top: "ip"
+  param {
+    lr_mult: 1.0
+    decay_mult: 1.0
+  }
+  param {
+    lr_mult: 2.0
+    decay_mult: 0.0
+  }
+  inner_product_param {
+    num_output: 17
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.0
+    }
+  }
+}
+layer {
+  name: "lstm_1"
+  type: "Reshape"
+  bottom: "ip"
+  top: "lstm_1"
+  reshape_param {
+    shape {
+      dim: 100
+      dim: 17
+    }
+  }
+}
+layer {
+  name: "fc"
+  type: "Dropout"
+  bottom: "lstm_1"
+  top: "fc"
+  dropout_param {
+    dropout_ratio: 0.600000023842
+  }
+}
+layer {
+  name: "loss"
+  type: "SoftmaxWithLoss"
+  bottom: "fc"
+  bottom: "label_1"
+  top: "loss"
+}
